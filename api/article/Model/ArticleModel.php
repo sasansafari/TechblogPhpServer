@@ -27,6 +27,13 @@ class ArticleModel
         return  $stm->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function findAll_tags()
+    {
+        $stm = $this->pdo->prepare("select * from tags order by id desc");
+        $stm->execute();
+        return  $stm->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function findByID($tbl_name, $field_name, $id)
     {
         $stm = $this->pdo->prepare("select * from {$tbl_name}  where {$field_name} = {$id} ");
@@ -61,9 +68,11 @@ class ArticleModel
         $stm->execute();
         return $stm->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    
     public function getNewArticles($user_id)
     {
-        $stm = $this->pdo->prepare("select * from article order by id desc limit 10 ");
+        $stm = $this->pdo->prepare("select * from article where status ='1'  order by id desc limit 10 ");
         $stm->execute();
         $result = $stm->fetchAll(PDO::FETCH_ASSOC);
         foreach ($result as $item) {
@@ -79,6 +88,8 @@ class ArticleModel
         }
         return $response;
     }
+    
+
 
     public function articleInfo($id, $user_id)
     {
@@ -90,6 +101,7 @@ class ArticleModel
         // get tags
         $tags = $this->findTags_byID($id);
 
+
         // isFavorite
         if (null !== $user_id) {
             $isFavorite = $this->isFavorite($result['id'], $user_id);
@@ -98,19 +110,24 @@ class ArticleModel
         }
 
         // related
-        $relatedArticles = $this->findRelated_by_id('article', 'cat_id', $result['id']);
-        foreach ($relatedArticles as $item) {
-            $cat_name = $this->findByID('category', 'id', $item['cat_id']);
-            $author = $this->findByID('users', 'id', $item['author_id']);
-            $related[] = ['id' => $item['id'], 'title' => $item['title'], 'image' => $item['image'], 'cat_id' => $item['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $item['view'], 'status' => $item['status'], 'created_at' => convertDateToJalali_date($item['created_at'])];
+        $relatedArticles = $this->findRelated_by_id('article', 'cat_id', $result['cat_id']);
+        if ($relatedArticles) {
+            foreach ($relatedArticles as $item) {
+                $cat_name = $this->findByID('category', 'id', $item['cat_id']);
+                $author = $this->findByID('users', 'id', $item['author_id']);
+                $related[] = ['id' => $item['id'], 'title' => $item['title'], 'image' => $item['image'], 'cat_id' => $item['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $item['view'], 'status' => $item['status'], 'created_at' => convertDateToJalali_date($item['created_at'])];
+            }
+        } else {
+            $related = [];
         }
+
         // updateView
         $this->updateViewNumber($result['id']);
 
         $response = [
             'info' =>
             array(
-                'id' => $result['id'], 'title' => $result['title'], 'content' => $result['content'], 'image' => $result['image'], 'cat_id' => $result['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $result['view'], 'status' => $item['status'], 'created_at' => convertDateToJalali_date($result['created_at'])
+                'id' => $result['id'], 'title' => $result['title'], 'content' => $result['content'], 'image' => $result['image'], 'cat_id' => $result['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $result['view'], 'status' => $result['status'], 'created_at' => convertDateToJalali_date($result['created_at'])
             ),
             'isFavorite' => $isFavorite,
             'related' => $related,
@@ -118,6 +135,7 @@ class ArticleModel
         ];
         return $response;
     }
+
 
     public function findTags_byID($article_id)
     {
@@ -269,27 +287,33 @@ class ArticleModel
 
     public function favorites($user_id)
     {
-        $stm = $this->pdo->prepare("select * from favorite_article where user_id = :user_id");
-        $stm->bindParam('user_id', $user_id);
-        $stm->execute();
         $result = $this->findAll_By_id('favorite_article', 'user_id', $user_id);
-        foreach ($result as $item) {
-            $article = $this->findByID('article', 'id', $item['article_id']);
-            $cat_name = $this->findByID('category', 'id', $article['cat_id']);
-            $author = $this->findByID('users', 'id', $article['author_id']);
+        $response = [];
 
-            $response[] = ['id' => $article['id'], 'title' => $article['title'], 'image' => $article['image'], 'cat_id' => $article['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $article['view'], 'status' => $article['status'], 'created_at' => convertDateToJalali_date($article['created_at'])];
+        if (count($result) > 0) {
+            foreach ($result as $item) {
+                $article = $this->findByID('article', 'id', $item['article_id']);
+                $cat_name = $this->findByID('category', 'id', $article['cat_id']);
+                $author = $this->findByID('users', 'id', $article['author_id']);
+
+                $response[] = ['fav_id' => $item['id'], 'article_id' => $article['id'],  'title' => $article['title'], 'image' => $article['image'], 'cat_id' => $article['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $article['view'], 'status' => $article['status'], 'created_at' => convertDateToJalali_date($article['created_at'])];
+            }
         }
+
         return $response;
     }
 
     public function published_by_me($user_id)
     {
         $result = $this->findAll_By_id('article', 'author_id', $user_id);
-        foreach ($result as $article) {
-            $cat_name = $this->findByID('category', 'id', $article['cat_id']);
-            $author = $this->findByID('users', 'id', $article['author_id']);
-            $response[] = ['id' => $article['id'], 'title' => $article['title'], 'image' => $article['image'], 'cat_id' => $article['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $article['view'], 'status' => $article['status'], 'created_at' => convertDateToJalali_date($article['created_at'])];
+        $response = [];
+
+        if (count($result) > 0) {
+            foreach ($result as $article) {
+                $cat_name = $this->findByID('category', 'id', $article['cat_id']);
+                $author = $this->findByID('users', 'id', $article['author_id']);
+                $response[] = ['id' => $article['id'], 'title' => $article['title'], 'image' => $article['image'], 'cat_id' => $article['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $article['view'], 'status' => $article['status'], 'created_at' => convertDateToJalali_date($article['created_at'])];
+            }
         }
         return $response;
     }
@@ -330,7 +354,7 @@ class ArticleModel
     {
         $file_name = explode('/', $image_url);
         $destination = __DIR__ . '/../../../assets/upload/images/article/' . end($file_name);
-        unlink($destination);
+        @unlink($destination);
     }
 
     public function upload($image)
@@ -343,7 +367,7 @@ class ArticleModel
 
     public function store_tags($tag_list, $article_id)
     {
-        foreach ($tag_list as $item) {
+        foreach (@$tag_list as $item) {
             $stm = $this->pdo->prepare("insert into tags_article (tag_id, article_id) values (:tag_id, :article_id)");
             $stm->bindParam('tag_id', $item);
             $stm->bindParam('article_id', $article_id);

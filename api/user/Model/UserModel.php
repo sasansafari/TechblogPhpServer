@@ -19,7 +19,7 @@ class UserModel
         $stm->execute();
         return  $stm->fetch(PDO::FETCH_ASSOC);
     }
-    
+
     public function update($user_id, $name, $image)
     {
         $userInfo = $this->findByID('users', 'id', $user_id);
@@ -32,15 +32,16 @@ class UserModel
             @$image_url = $userInfo['image'];
         }
 
-        $stm = $this->pdo->prepare("update users set name = :name, image = :image");
+        $stm = $this->pdo->prepare("update users set name = :name, image = :image where id =:user_id");
         $stm->bindParam('name', $name);
         $stm->bindParam('image', $image_url);
+        $stm->bindParam('user_id', $user_id);
         if ($stm->execute()) {
             return 'updated';
         }
         return 'error';
     }
-    
+
     public function removeFile($image_url)
     {
         $file_name = explode('/', $image_url);
