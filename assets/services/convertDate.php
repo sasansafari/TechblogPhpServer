@@ -23,8 +23,8 @@ function convertDateToJalali_full($date)
 function convertDateToJalali_date($date)
 {
     $explode = explode(" ", $date);
+    @$exploded_date = explode('-', $explode[0]);
+
     $mod = "/";
-    $date = $explode[0];
-    @$explode = explode('-', $date);
-    return jdate(@gregorian_to_jalali("$explode[0]", "$explode[1]", "$explode[2]", $mod));
+    return jdate(@gregorian_to_jalali("$exploded_date[0]", "$exploded_date[1]", "$exploded_date[2]", $mod));
 }

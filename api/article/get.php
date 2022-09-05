@@ -22,6 +22,10 @@ switch ($command) {
     case "categories":
         $response = $ArticleModel->findAll_categories();
         break;
+        
+    case "tags":
+        $response = $ArticleModel->findAll_tags();
+        break;
 
     case "get_articles_with_cat_id":
         $cat_id = sanitize($_GET['cat_id']);

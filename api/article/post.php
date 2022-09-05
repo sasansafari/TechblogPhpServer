@@ -1,5 +1,6 @@
 <?php
 
+
 // JWT Service
 require_once __DIR__ . "/../../assets/services/JWT/JwtHandler.php";
 $jsonWebToken = new JwtHandler();
@@ -9,14 +10,13 @@ require_once __DIR__ . "/Model/ArticleModel.php";
 $ArticleModel = new ArticleModel();
 require_once __DIR__ . '/../../assets/public/functions.php';
 
-$command = sanitize($_GET['command']);
 if (apache_request_headers()['Authorization']) {
     $token = apache_request_headers()['Authorization'];
 
     // validation token
     $isValid = $jsonWebToken->validationToken($token);
     if ($isValid) {
-
+        $command = sanitize($_POST['command']);
         switch ($command) {
 
             case "store":
@@ -26,6 +26,7 @@ if (apache_request_headers()['Authorization']) {
                 $content = sanitize($_POST['content']);
                 $cat_id = sanitize($_POST['cat_id']);
                 $tag_list = sanitize($_POST['tag_list']);
+
                 $response = $ArticleModel->store($user_id, $title, $image, $content, $cat_id, json_decode($tag_list, true));
                 break;
 

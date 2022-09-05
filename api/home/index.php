@@ -1,4 +1,6 @@
 <?php
+header('Content-Type: application/json; charset=utf-8');
+
 // include HomeModel
 require_once __DIR__ . "/Model/HomeModel.php";
 $HomeModel = new HomeModel();
@@ -11,5 +13,4 @@ switch ($command) {
         break;
 }
 
-header('Content-Type: application/json; charset=utf-8');
 echo json_encode($response);

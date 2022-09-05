@@ -1,4 +1,6 @@
 <?php
+header('Content-Type: application/json; charset=utf-8');
+
 
 // JWT Service
 require_once __DIR__ . "/../../assets/services/JWT/JwtHandler.php";
@@ -9,7 +11,7 @@ require_once __DIR__ . "/Model/PodcastModel.php";
 $PodcastModel = new PodcastModel();
 require_once __DIR__ . '/../../assets/public/functions.php';
 
-$command = sanitize($_GET['command']);
+
 if (apache_request_headers()['Authorization']) {
     $token = apache_request_headers()['Authorization'];
 
@@ -17,7 +19,7 @@ if (apache_request_headers()['Authorization']) {
     $isValid = $jsonWebToken->validationToken($token);
     if ($isValid) {
 
-        $command = sanitize($_GET['command']);
+        $command = sanitize($_POST['command']);
         switch ($command) {
 
             case "store_title":
@@ -53,6 +55,7 @@ if (apache_request_headers()['Authorization']) {
                 $title = sanitize($_POST['title']);
                 $length = sanitize($_POST['length']);
                 $file = $_FILES['file'];
+                
                 $response = $PodcastModel->store_file($podcast_id, $title, $length, $file);
                 break;
 
@@ -95,5 +98,4 @@ if (apache_request_headers()['Authorization']) {
     $response = array('status_code' => 401, 'response' => [], 'msg' => 'You are not Authorized!');
 }
 
-header('Content-Type: application/json; charset=utf-8');
 echo json_encode($response);

@@ -91,20 +91,31 @@ class PodcastModel
 
         // get files
         $result = $this->files($podcast_id);
+        if ($result) {
+            foreach ($result as $item) {
+                // get related
+                                $relatedResult = $this->related($item['podcast_id']);
+                if (count($relatedResult) > 0) {
+                    $publisher = '';
+                    foreach ($relatedResult as $related_item) {
+                        $publisher = $this->findByID('users', 'id', $related_item['user_id']);
+                        $related[] = ['id' => $related_item['id'], 'title' => $related_item['title'], 'poster' => $related_item['poster'], 'publisher' => $publisher['name'], 'view' => $related_item['view'], 'status' => $related_item['status'],  'created_at' => convertDateToJalali_date($related_item['created_at'])];
+                    }
+                } else {
+                    $related = [];
+                }
 
-        foreach ($result as $item) {
-            // get related
-            $relatedResult = $this->related($item['podcast_id']);
-            $publisher = '';
-            foreach ($relatedResult as $related_item) {
-                $publisher = $this->findByID('users', 'id', $related_item['user_id']);
-                $related[] = ['id' => $related_item['id'], 'title' => $related_item['title'], 'poster' => $related_item['poster'], 'publisher' => $publisher['name'], 'view' => $related_item['view'], 'status' => $related_item['status'],  'created_at' => convertDateToJalali_date($related_item['created_at'])];
+                $response[] = [
+                    'id' => $item['id'], 'podcast_id' => $item['podcast_id'], 'file' => $item['file'], 'title' => $item['title'], 'length' => $item['length']
+                ];
             }
+        } else {
+            $response = [];
+            $related = [];
 
-            $response[] = [
-                'id' => $item['id'], 'podcast_id' => $item['podcast_id'], 'file' => $item['file'], 'title' => $item['title'], 'length' => $item['length']
-            ];
         }
+
+
         $finalResult = ['files' => $response, 'related' => $related];
         return $finalResult;
     }
@@ -246,25 +257,32 @@ class PodcastModel
     public function favorites($user_id)
     {
         $result = $this->findAll_By_id('favorite_podcast', 'user_id', $user_id);
-        foreach ($result as $item) {
-            $podcast = $this->findByID('podcast', 'id', $item['podcast_id']);
-            $cat_name = $this->findByID('category', 'id', $podcast['cat_id']);
-            $author = $this->findByID('users', 'id', $podcast['user_id']);
-            $response[] = ['id' => $podcast['id'], 'title' => $podcast['title'], 'poster' => $podcast['poster'], 'cat_id' => $podcast['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $podcast['view'], 'status' => $podcast['status'], 'created_at' => convertDateToJalali_date($podcast['created_at'])];
-        }
+        if (count($result) > 0 ){
+            foreach ($result as $item) {
+                $podcast = $this->findByID('podcast', 'id', $item['podcast_id']);
+                $cat_name = $this->findByID('category', 'id', $podcast['cat_id']);
+                $author = $this->findByID('users', 'id', $podcast['user_id']);
+                $response[] = ['fav_id' => $item['id'], 'podcast_id' => $podcast['id'],  'title' => $podcast['title'], 'poster' => $podcast['poster'], 'cat_id' => $podcast['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $podcast['view'], 'status' => $podcast['status'], 'created_at' => convertDateToJalali_date($podcast['created_at'])];
+            }
         return $response;
+        }
+        return [];
+
     }
 
     public function published_by_me($user_id)
     {
         $result = $this->findAll_By_id('podcast', 'user_id', $user_id);
-
+        if (count($result) > 0 ){
+            
         foreach ($result as $podcast) {
             $cat_name = $this->findByID('category', 'id', $podcast['cat_id']);
             $author = $this->findByID('users', 'id', $podcast['user_id']);
             $response[] = ['id' => $podcast['id'], 'title' => $podcast['title'], 'poster' => $podcast['poster'], 'cat_id' => $podcast['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $podcast['view'], 'status' => $podcast['status'], 'created_at' => convertDateToJalali_date($podcast['created_at'])];
         }
         return $response;
+        }
+        return [];
     }
 
     public function delete_favorite($fav_id)

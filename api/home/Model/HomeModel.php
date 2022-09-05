@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../../assets/services/convertDate.php';
 class HomeModel
 {
 
+    private $pdo;
     public function __construct()
     {
         global $pdo;
@@ -39,41 +40,64 @@ class HomeModel
         $stm->bindParam('id', $id);
         $stm->execute();
         return  $stm->fetch(PDO::FETCH_ASSOC);
-    } 
+    }
 
     public function findPoster()
     {
         $stm = $this->pdo->prepare("select id, title, image from article  where status = '1' order by id desc limit 1");
         $stm->execute();
         return  $stm->fetch(PDO::FETCH_ASSOC);
-    }  
-    
-    public function findAllPodcats()
+    }
+
+    public function findAllPodcasts()
     {
-        $stm = $this->pdo->prepare("select * from podcast order by id desc limit 10 ");
+        $stm = $this->pdo->prepare("select * from podcast where status ='1' order by view desc limit 10 ");
         $stm->execute();
         return  $stm->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function homeItems()
     {
- 
+
         $top_visited = $this->findAllArticle('order by view desc limit 10 ');
         foreach ($top_visited as $item) {
             $cat_name = $this->findByID('category', $item['cat_id']);
             $author = $this->findByID('users', $item['author_id']);
-            $topVisited[] = ['id' => $item['id'], 'title' => $item['title'], 'image' => $item['image'], 'cat_id' => $item['cat_id'], 'cat_name' => $cat_name['title'], 'author' => $author['name'], 'view' => $item['view'], 'status' => $item['status'],  'created_at' => convertDateToJalali_date($item['created_at'])];
+            $topVisited[] = [
+                'id' => $item['id'],
+                'title' => $item['title'],
+                'image' => $item['image'],
+                'cat_id' => $item['cat_id'],
+                'cat_name' => $cat_name['title'],
+                'author' => $author['name'],
+                'view' => $item['view'],
+                'status' => $item['status'],
+                'created_at' => convertDateToJalali_date($item['created_at'])
+            ];
         }
 
         $poster = $this->findPoster();
         $tags = $this->findAllTags();
         $categories = $this->findAllCategories();
-        $top_podcasts = $this->findAllPodcats();
+        $top_podcasts = $this->findAllPodcasts();
         foreach ($top_podcasts as $item) {
             $publisher = $this->findByID('users', $item['user_id']);
-            $topPodcasts[] = ['id' => $item['id'], 'title' => $item['title'], 'poster' => $item['poster'], 'publisher' => $publisher['name'],  'view' => $item['view'], 'created_at' => convertDateToJalali_date($item['created_at'])];
+            $topPodcasts[] = [
+                'id' => $item['id'],
+                'title' => $item['title'],
+                'poster' => $item['poster'],
+                'publisher' => $publisher['name'],
+                'view' => $item['view'],
+                'created_at' => convertDateToJalali_date($item['created_at'])
+            ];
         }
 
-        return array('poster' => $poster, 'top_visited' => $topVisited, 'top_podcasts' => $topPodcasts, 'tags' => $tags, 'categories' => $categories);
+        return array(
+            'poster' => $poster,
+            'top_visited' => $topVisited,
+            'top_podcasts' => $topPodcasts,
+            'tags' => $tags,
+            'categories' => $categories
+        );
     }
 }
